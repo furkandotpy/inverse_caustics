@@ -2,7 +2,9 @@ using LinearAlgebra
 using StaticArrays
 using GLMakie
 
-function flattenRays(rays)
+include("structs.jl")
+
+function flattenRays(rays::Vector{Ray})::Vector{Point3f}
 
     # 2. Build flat vector of points connected by NaNs (Single draw-call)
     flattened_rays = Vector{Point3f}(undef, length(rays) * 3)
@@ -18,31 +20,35 @@ function flattenRays(rays)
     return flattened_rays
 end
 
-function drawScene(flattened_rays)
+function collect_intersections(rays::Vector{Ray}, sphere_obj::OpticalSphere)
+    intersections = Point3f[]
 
+    for r in rays
+        t = ray_sphere_intersection(r, sphere_obj.center, sphere_obj.radius)
+        if !isnothing(t)
+            # Calculate point: origin + direction * distance
+            p_hit = Point3f(r.origin .+ r.direction .* t)
+            push!(intersections, p_hit)
+        end
+    end
+
+    return intersections
+end
+
+function drawScene(flattened_rays::Vector{Point3f}, hit_points::Vector{Point3f})
     fig = Figure(size=(900, 700))
 
     ax = Axis3(
         fig[1, 1],
         title="Ray-Sphere Interaction",
-        xlabel="X Axis",
-        ylabel="Y Axis",
-        zlabel="Z Axis",
-
-        # 1. Fix aspect ratio so 1 unit in X = 1 unit in Y = 1 unit in Z (spheres stay circular)
+        xlabel="X Axis", ylabel="Y Axis", zlabel="Z Axis",
         aspect=:data,
-
-        # 2. Disable dynamic box resizing/pumping during rotation
         viewmode=:fit,
-
-        # 3. Lock axis boundaries so GLMakie won't auto-rescale
         limits=(-5, 5, -5, 5, -1, 6),
-
-        # Optional: Set perspective strength (0.0 = completely flat orthographic view)
         perspectiveness=0.5
     )
 
-    # Draw all 10,000 rays in 1 draw call
+    # Draw Rays
     lines!(ax, flattened_rays, color=:orange, linewidth=0.5, alpha=0.3)
 
     # Draw Sphere surface
@@ -51,8 +57,12 @@ function drawScene(flattened_rays)
     # Draw Light Source
     meshscatter!(ax, [Point3f(LIGHT_SOURCE...)], color=:yellow, markersize=0.2)
 
+    # Draw Intersection Points
+    if !isempty(hit_points)
+        meshscatter!(ax, hit_points, color=:red, markersize=0.08)
+    end
+
     display(fig)
     readline()
     GLMakie.closeall()
-
 end

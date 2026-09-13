@@ -5,7 +5,7 @@ include("structs.jl")
 
 
 function generate_rays(;
-    n_rays=10_000,
+    n_rays=50_000,
     half_cone_angle=π / 6, # 30-degree spread around central axis
     light_source=SVector(0.0, 0.0, 5.0)
 )
@@ -35,7 +35,7 @@ function generate_rays(;
     return rays
 end
 
-sphere_obj = OpticalSphere(Point3f(0, 0, 2), 2.0f0, 1.5)
+sphere_obj = OpticalSphere(Point3f(0, 0, 2), 1.0f0, 1.5)
 
 LIGHT_SOURCE = SVector(0.0, 0.0, 5.0)
 
